@@ -36,7 +36,6 @@ struct ContentView: View {
                 }
             }
             .listStyle(SidebarListStyle())
-            .frame(minWidth: 250)
 
             Text("Select a note or start a journal entry")
         }
