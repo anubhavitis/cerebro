@@ -1,47 +1,76 @@
+import Inject
 import SwiftUI
 
 struct ContentView: View {
+    @ObserveInjection var inject
     @StateObject private var vaultViewModel = VaultViewModel()
     @StateObject private var journalViewModel = JournalViewModel()
     @State private var selectedNote: Note?
+    @State private var selectedCategory: String?
     @State private var newJournalEntry = ""
     @State private var showingError = false
     @State private var errorMessage = ""
+    @State private var selectedSidebarItem: SidebarItem = .vault
+
+    enum SidebarItem {
+        case vault
+        case journal
+        case settings
+    }
 
     var body: some View {
-        NavigationView {
-            List {
-                Section(header: Text("Vault")) {
-                    ForEach(vaultViewModel.notes) { note in
-                        NavigationLink(
-                            destination: NoteDetailView(
-                                note: note,
-                                onSave: vaultViewModel.saveNote),
-                            tag: note,
-                            selection: $selectedNote
-                        ) {
-                            NoteRowView(note: note)
-                        }
+        NavigationSplitView {
+            // Sidebar
+            VStack(spacing: 0) {
+                HStack {
+                    Spacer()
+                    Button(action: { selectedSidebarItem = .journal }) {
+                        Image(systemName: "book")
+                            .font(.title2)
+                            .foregroundColor(
+                                selectedSidebarItem == .journal ? .accentColor : .primary)
                     }
+                    .buttonStyle(.borderless)
+
+                    Spacer()
+
+                    Button(action: { selectedSidebarItem = .vault }) {
+                        Image(systemName: "folder")
+                            .font(.title2)
+                            .foregroundColor(
+                                selectedSidebarItem == .vault ? .accentColor : .primary)
+                    }
+                    .buttonStyle(.borderless)
+
+                    Spacer()
                 }
+                .padding()
 
-                Section(header: Text("Journal")) {
-                    JournalEntryView(
-                        newEntry: $newJournalEntry,
-                        onCommit: commitJournalEntry)
+                // Content below buttons
+                Group {
+                    switch selectedSidebarItem {
+                    case .vault:
+                        VaultListView(vaultViewModel: vaultViewModel, selectedNote: $selectedNote)
+                    case .journal:
+                        JournalListView(
+                            journalViewModel: journalViewModel, newJournalEntry: $newJournalEntry,
+                            onCommit: commitJournalEntry)
+                    default:
+                        VaultListView(vaultViewModel: vaultViewModel, selectedNote: $selectedNote)
 
-                    ForEach(journalViewModel.entries) { entry in
-                        JournalEntryRowView(entry: entry)
                     }
                 }
             }
-            .listStyle(SidebarListStyle())
-
-            Text("Select a note or start a journal entry")
-        }
-        .toolbar {
-            ToolbarItem(placement: .navigation) {
-                Button("Load Vault", action: showVaultPicker)
+        } detail: {
+            // Detail View
+            if let selectedNote = selectedNote {
+                NoteDetailView(
+                    note: selectedNote,
+                    onSave: vaultViewModel.saveNote
+                )
+            } else {
+                Text("Select a note or start a journal entry")
+                    .foregroundColor(.secondary)
             }
         }
         .alert(isPresented: $showingError) {
@@ -64,16 +93,7 @@ struct ContentView: View {
                 journalViewModel.errorMessage = nil
             }
         }
-    }
-
-    private func showVaultPicker() {
-        let openPanel = NSOpenPanel()
-        openPanel.canChooseDirectories = true
-        openPanel.canChooseFiles = false
-
-        if openPanel.runModal() == .OK {
-            vaultViewModel.loadVault(at: openPanel.url!)
-        }
+        .enableInjection()
     }
 
     private func commitJournalEntry() {

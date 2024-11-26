@@ -49,10 +49,13 @@ struct NoteDetailView: View {
             if isEditing {
                 TextEditor(text: $editableContent)
                     .font(.body)
+                    .padding()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(nsColor: .textBackgroundColor))
             } else {
                 MarkdownView(content: editableContent)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(nsColor: .textBackgroundColor))
             }
         }
         .navigationTitle(note.name)
