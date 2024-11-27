@@ -7,6 +7,10 @@ struct NoteDetailView: View {
     @State private var isEditing: Bool = false
     @Environment(\.presentationMode) var presentationMode
 
+    func getScreenBounds() -> CGRect {
+        return NSScreen.main?.frame ?? .zero
+    }
+
     init(note: Note, onSave: @escaping (Note) -> Void) {
         self.note = note
         self.onSave = onSave
@@ -50,14 +54,20 @@ struct NoteDetailView: View {
                 TextEditor(text: $editableContent)
                     .font(.body)
                     .padding()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(
+                        maxWidth: getScreenBounds().width * 0.5, maxHeight: .infinity,
+                        alignment: .leading
+                    )
+                    .padding(.leading, 25)
                     .background(Color(nsColor: .textBackgroundColor))
             } else {
                 MarkdownView(content: editableContent)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(maxWidth: getScreenBounds().width * 0.5, maxHeight: .infinity)
+                    .padding(.leading, 25)
                     .background(Color(nsColor: .textBackgroundColor))
             }
         }
+        .background(Color(nsColor: .textBackgroundColor))
         .navigationTitle(note.name)
     }
 }
