@@ -59,8 +59,10 @@ struct NoteDetailView: View {
                                 maxHeight: .infinity,
                                 alignment: .topLeading
                             )
+                            .background(Color(nsColor: .textBackgroundColor))
                     } else {
                         Markdown(editableContent)
+                            .background(Color(nsColor: .textBackgroundColor))
                             .font(.body)
                             .textSelection(.enabled)
                             .markdownTheme(.gitHub)

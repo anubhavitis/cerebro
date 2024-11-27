@@ -12,18 +12,34 @@ struct VaultListView: View {
                     .keyboardShortcut("O", modifiers: .command)
             }
 
-            if !vaultViewModel.notes.isEmpty {
-                Section("Notes") {
-                    ForEach(vaultViewModel.notes) { note in
-                        NavigationLink(value: note) {
-                            NoteRowView(note: note)
-                        }
+            Section("Notes") {
+                ForEach(vaultViewModel.notes) { note in
+                    NavigationLink(value: note) {
+                        NoteRowView(note: note)
                     }
                 }
             }
+
         }
         .listStyle(.sidebar)
         .navigationTitle("Vault")
+        .onAppear(perform: loadDefaultVault)
+    }
+
+    private func loadDefaultVault() {
+        if vaultViewModel.notes.isEmpty {
+            if let vaultURL = getVaultURL() {
+                vaultViewModel.loadVault(at: vaultURL)
+            }
+        }
+    }
+
+    private func getVaultURL() -> URL? {
+        if let savedPath = UserDefaults.standard.string(forKey: "VaultPath") {
+            return URL(fileURLWithPath: savedPath)
+        }
+
+        return nil
     }
 
     private func showVaultPicker() {
@@ -32,7 +48,10 @@ struct VaultListView: View {
         openPanel.canChooseFiles = false
 
         if openPanel.runModal() == .OK {
-            vaultViewModel.loadVault(at: openPanel.url!)
+            if let url = openPanel.url {
+                UserDefaults.standard.set(url.path, forKey: "VaultPath")
+                vaultViewModel.loadVault(at: url)
+            }
         }
     }
 }
