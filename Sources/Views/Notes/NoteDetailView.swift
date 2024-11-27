@@ -1,7 +1,8 @@
+import MarkdownUI
 import SwiftUI
 
 struct NoteDetailView: View {
-    let note: Note
+    @Binding var note: Note
     let onSave: (Note) -> Void
     @State private var editableContent: String
     @State private var isEditing: Bool = false
@@ -11,63 +12,75 @@ struct NoteDetailView: View {
         return NSScreen.main?.frame ?? .zero
     }
 
-    init(note: Note, onSave: @escaping (Note) -> Void) {
-        self.note = note
+    init(note: Binding<Note>, onSave: @escaping (Note) -> Void) {
+        _note = note
         self.onSave = onSave
-        _editableContent = State(initialValue: note.content)
+        _editableContent = State(initialValue: note.wrappedValue.content)
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Toolbar
-            HStack {
-                Toggle(isOn: $isEditing) {
-                    Text(isEditing ? "Edit" : "Preview")
-                }
-                .toggleStyle(.switch)
-                .padding()
-
-                Spacer()
-
-                if isEditing {
-                    Button("Save") {
-                        let updatedNote = Note(
-                            id: note.id,
-                            name: note.name,
-                            path: note.path,
-                            content: editableContent,
-                            modifiedDate: Date()
-                        )
-                        onSave(updatedNote)
+        Group {
+            VStack(spacing: 0) {
+                // Toolbar
+                HStack {
+                    Toggle(isOn: $isEditing) {
+                        Text(isEditing ? "Edit" : "Preview")
                     }
-                    .keyboardShortcut(.return, modifiers: .command)
+                    .toggleStyle(.switch)
                     .padding()
+
+                    Spacer()
+
+                    if isEditing {
+                        Button("Save") {
+                            let updatedNote = Note(
+                                id: note.id,
+                                name: note.name,
+                                path: note.path,
+                                content: editableContent,
+                                modifiedDate: Date()
+                            )
+                            onSave(updatedNote)
+                        }
+                        .keyboardShortcut(.return, modifiers: .command)
+                        .padding()
+                    }
                 }
-            }
-            .background(Color(NSColor.windowBackgroundColor))
+                .background(Color(NSColor.windowBackgroundColor))
 
-            // Divider
-            Divider()
+                Divider()
 
-            // Content area
-            if isEditing {
-                TextEditor(text: $editableContent)
-                    .font(.body)
-                    .padding()
-                    .frame(
-                        maxWidth: getScreenBounds().width * 0.5, maxHeight: .infinity,
-                        alignment: .leading
-                    )
-                    .padding(.leading, 25)
-                    .background(Color(nsColor: .textBackgroundColor))
-            } else {
-                MarkdownView(content: editableContent)
-                    .frame(maxWidth: getScreenBounds().width * 0.5, maxHeight: .infinity)
-                    .padding(.leading, 25)
-                    .background(Color(nsColor: .textBackgroundColor))
+                ScrollView {
+                    if isEditing {
+                        TextEditor(text: $editableContent)
+                            .font(.body)
+                            .frame(
+                                maxWidth: getScreenBounds().width * 0.5,
+                                maxHeight: .infinity,
+                                alignment: .topLeading
+                            )
+                    } else {
+                        Markdown(editableContent)
+                            .font(.body)
+                            .textSelection(.enabled)
+                            .markdownTheme(.gitHub)
+                            .frame(
+                                maxWidth: getScreenBounds().width * 0.5,
+                                maxHeight: .infinity,
+                                alignment: .topLeading
+                            )
+                    }
+                }
+                .padding()
+                .background(Color(nsColor: .textBackgroundColor))
             }
+
+            .background(Color(nsColor: .textBackgroundColor))
+            .navigationTitle(note.name)
+
         }
-        .background(Color(nsColor: .textBackgroundColor))
-        .navigationTitle(note.name)
+        .onChange(of: note) { newNote in
+            editableContent = newNote.content
+        }
     }
 }

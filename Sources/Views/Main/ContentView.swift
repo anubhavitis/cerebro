@@ -63,10 +63,15 @@ struct ContentView: View {
             }
         } detail: {
             // Detail View
-            if let selectedNote = selectedNote {
+            if let selectedNote = selectedNote {  // Unwrap the optional
                 NoteDetailView(
-                    note: selectedNote,
-                    onSave: vaultViewModel.saveNote
+                    note: Binding(  // Create a non-optional binding
+                        get: { selectedNote },
+                        set: { self.selectedNote = $0 }
+                    ),
+                    onSave: { note in
+                        vaultViewModel.saveNote(note)
+                    }
                 )
             } else {
                 Text("Select a note or start a journal entry")
