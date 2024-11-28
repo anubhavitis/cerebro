@@ -3,86 +3,59 @@ import SwiftUI
 
 struct NoteDetailView: View {
     @Binding var note: Note
-    let onSave: (Note) -> Void
-    @State private var editableContent: String
-    @State private var isEditing: Bool = false
-    @Environment(\.presentationMode) var presentationMode
+    @StateObject private var viewModel: MarkdownLineViewModel
+
+    init(note: Binding<Note>, onSave: @escaping (Note) -> Void) {
+        _note = note
+        _viewModel = StateObject(
+            wrappedValue: MarkdownLineViewModel(note: note.wrappedValue, onSave: onSave))
+    }
 
     func getScreenBounds() -> CGRect {
         return NSScreen.main?.frame ?? .zero
     }
 
-    init(note: Binding<Note>, onSave: @escaping (Note) -> Void) {
-        _note = note
-        self.onSave = onSave
-        _editableContent = State(initialValue: note.wrappedValue.content)
-    }
-
     var body: some View {
-        Group {
-            VStack(spacing: 0) {
-                // Toolbar
-                HStack {
-                    Toggle(isOn: $isEditing) {
-                        Text(isEditing ? "Edit" : "Preview")
-                    }
-                    .toggleStyle(.switch)
-                    .padding()
-
-                    Spacer()
-
-                    if isEditing {
-                        Button("Save") {
-                            let updatedNote = Note(
-                                id: note.id,
-                                name: note.name,
-                                path: note.path,
-                                content: editableContent,
-                                modifiedDate: Date()
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(viewModel.contentLines.enumerated()), id: \.element.id) {
+                    index, line in
+                    if line.isEditing {
+                        TextEditor(
+                            text: Binding(
+                                get: { viewModel.contentLines[index].text },
+                                set: { viewModel.updateLineContent(at: index, newContent: $0) }
                             )
-                            onSave(updatedNote)
+                        )
+                        .font(.body)
+                        .frame(maxWidth: .infinity, minHeight: 30)
+                        .background(Color(nsColor: .textBackgroundColor))
+                        .onSubmit {
+                            viewModel.handleLineSubmit(at: index)
                         }
-                        .keyboardShortcut(.return, modifiers: .command)
-                        .padding()
-                    }
-                }
-                .background(Color(NSColor.windowBackgroundColor))
-
-                Divider()
-
-                ScrollView {
-                    if isEditing {
-                        TextEditor(text: $editableContent)
-                            .font(.body)
-                            .frame(
-                                maxWidth: getScreenBounds().width * 0.5,
-                                maxHeight: .infinity,
-                                alignment: .topLeading
-                            )
-                            .background(Color(nsColor: .textBackgroundColor))
                     } else {
-                        Markdown(editableContent)
+                        Markdown(line.text)
                             .background(Color(nsColor: .textBackgroundColor))
+                            .markdownTheme(.gitHub)
                             .font(.body)
                             .textSelection(.enabled)
-                            .markdownTheme(.gitHub)
-                            .frame(
-                                maxWidth: getScreenBounds().width * 0.5,
-                                maxHeight: .infinity,
-                                alignment: .topLeading
-                            )
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.leading, CGFloat(line.indentationLevel * 20))
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                viewModel.startEditing(at: index)
+                            }
+                            .padding(.vertical, 2)
                     }
                 }
-                .padding()
-                .background(Color(nsColor: .textBackgroundColor))
             }
-
-            .background(Color(nsColor: .textBackgroundColor))
-            .navigationTitle(note.name)
-
+            .padding()
+            .frame(maxWidth: getScreenBounds().width * 0.5, alignment: .leading)
         }
+        .background(Color(nsColor: .textBackgroundColor))
+        .navigationTitle(note.name)
         .onChange(of: note) { newNote in
-            editableContent = newNote.content
+            viewModel.updateNote(newNote)
         }
     }
 }
