@@ -1,8 +1,6 @@
-import Inject
 import SwiftUI
 
 struct ContentView: View {
-    @ObserveInjection var inject
     @StateObject private var vaultViewModel = VaultViewModel()
     @State private var selectedNote: Note?
     @State private var showingError = false
@@ -49,6 +47,5 @@ struct ContentView: View {
                 vaultViewModel.errorMessage = nil
             }
         }
-        .enableInjection()
     }
 }
